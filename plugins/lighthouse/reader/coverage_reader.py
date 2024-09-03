@@ -6,6 +6,7 @@ import traceback
 
 from .coverage_file import CoverageFile
 from lighthouse.util.python import iteritems
+from lighthouse.util.log import lmsg
 from lighthouse.exceptions import CoverageParsingError
 
 logger = logging.getLogger("Lighthouse.Reader")
@@ -39,7 +40,7 @@ class CoverageReader(object):
 
         # attempt to parse the given coverage file with each available parser
         for name, parser in iteritems(self._installed_parsers):
-            logger.debug("Attempting parse with '%s'" % name)
+            lmsg("Attempting parse with '%s'" % name)
 
             # attempt to open/parse the coverage file with the given parser
             try:
@@ -49,7 +50,7 @@ class CoverageReader(object):
             # log the exceptions for each parse failure
             except Exception as e:
                 parse_failures[name] = traceback.format_exc()
-                logger.debug("| Parse FAILED - " + str(e))
+                lmsg("| Parse FAILED - " + str(e))
                 #logger.exception("| Parse FAILED")
 
         #
@@ -61,7 +62,7 @@ class CoverageReader(object):
             raise CoverageParsingError(filepath, parse_failures)
 
         # successful parse
-        logger.debug("| Parse OKAY")
+        lmsg("| Parse OKAY")
         return coverage_file
 
     def _import_parsers(self):
@@ -79,7 +80,7 @@ class CoverageReader(object):
                 continue
 
             # attempt to load a CoverageFile format from the current *.py file
-            logger.debug("| Searching file %s" % filename)
+            lmsg("| Searching file %s" % filename)
             parser_file = filename[:-3]
             parser_class = self._locate_subclass(parser_file, target_subclass)
 
@@ -89,9 +90,9 @@ class CoverageReader(object):
                 continue
 
             # instantiate and add the parser to our dict of imported parsers
-            logger.debug("| | Found %s" % parser_class.__name__)
+            lmsg("| | Found %s" % parser_class.__name__)
             self._installed_parsers[parser_class.__name__] = parser_class
-        logger.debug("+- Done dynamically importing parsers")
+        lmsg("+- Done dynamically importing parsers")
 
         # return the number of modules successfully imported
         return self._installed_parsers
