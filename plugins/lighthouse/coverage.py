@@ -234,7 +234,20 @@ class DatabaseCoverage(object):
         # disassembler fudginess.
         #
 
-        return percent > 2.0
+        is_suspicious = percent > 2.0
+
+        if is_suspicious:
+            log.lmsg("Coverage is suspicious (%.2f%%):" % percent)
+            log.lmsg("    Total nodes: %u" % total)
+            log.lmsg("    Total nodes with coverage: %u" % len(self.nodes))
+            log.lmsg("    Total nodes with partial coverage: %u" % len(self.partial_nodes))
+            log.lmsg("    Total instructions with partial coverage: %u" % len(self.partial_instructions))
+            log.lmsg("    Total orphaned instructions: %u" % len(self.orphan_addresses))
+            log.lmsg("    Total functions: %u" % len(self.functions))
+            log.lmsg("    Total instructions: %u" % sum(f.instruction_count for f in itervalues(self._metadata.functions)))
+            log.lmsg("    Total instructions executed: %u" % sum(f.instructions_executed for f in itervalues(self.functions)))
+        
+        return is_suspicious
 
     #--------------------------------------------------------------------------
     # Metadata Population
@@ -502,7 +515,12 @@ class DatabaseCoverage(object):
         # (bb_address, size) into its respective addresses
         #
 
-        if block_ratio < block_trace_confidence:
+        treat_as_instruction_trace = block_ratio < block_trace_confidence
+        treat_as_block_trace = not treat_as_instruction_trace
+
+        log.lmsg("is_block_trace confidence %f%%, treating as %s trace" % (block_ratio*100, "block" if treat_as_block_trace else "instruction"))
+
+        if treat_as_instruction_trace:
             return
 
         #
