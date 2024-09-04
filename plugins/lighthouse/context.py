@@ -6,6 +6,7 @@ from lighthouse.painting import CoveragePainter
 from lighthouse.director import CoverageDirector
 from lighthouse.coverage import DatabaseCoverage
 from lighthouse.metadata import DatabaseMetadata
+from lighthouse.user_config import LighthouseUserConfig
 
 from lighthouse.util.disassembler import disassembler, DisassemblerContextAPI
 
@@ -20,17 +21,18 @@ class LighthouseContext(object):
     A database/binary-unique instance of Lighthouse and its subsystems.
     """
 
-    def __init__(self, core, dctx):
+    def __init__(self, core, dctx, user_config: LighthouseUserConfig = None):
         disassembler[self] = DisassemblerContextAPI(dctx)
         self.core = core
         self.dctx = dctx
+        self.user_config = user_config or LighthouseUserConfig()
         self._started = False
 
         # the database metadata cache
         self.metadata = DatabaseMetadata(self)
 
         # the coverage engine
-        self.director = CoverageDirector(self.metadata, self.core.palette)
+        self.director = CoverageDirector(self.metadata, self.core.palette, user_config=self.user_config)
 
         # the coverage painter
         self.painter = CoveragePainter(self, self.director, self.core.palette)

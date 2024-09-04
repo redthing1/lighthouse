@@ -8,6 +8,7 @@ import collections
 from lighthouse.util import *
 from lighthouse.util.qt import compute_color_on_gradient
 from lighthouse.metadata import DatabaseMetadata
+from lighthouse.user_config import LighthouseUserConfig
 
 logger = logging.getLogger("Lighthouse.Coverage")
 
@@ -41,10 +42,13 @@ class DatabaseCoverage(object):
     Database level coverage mapping.
     """
 
-    def __init__(self, palette, name="", filepath=None, data=None):
+    def __init__(self, palette, user_config: LighthouseUserConfig, name="", filepath=None, data=None):
 
         # color palette
         self.palette = palette
+
+        # user configuration
+        self.user_config = user_config
 
         # the name of the DatabaseCoverage object
         self.name = name
@@ -234,7 +238,7 @@ class DatabaseCoverage(object):
         # disassembler fudginess.
         #
 
-        is_suspicious = percent > 2.0
+        is_suspicious = percent > (100 * self.user_config.suspicious_nodes_confidence_threshold)
 
         if is_suspicious:
             log.lmsg("Coverage is suspicious (%.2f%%):" % percent)
@@ -466,7 +470,7 @@ class DatabaseCoverage(object):
             composite_data[address] = self._hitmap[address]
 
         # done, return a new DatabaseCoverage masked with the given coverage
-        return DatabaseCoverage(self.palette, data=composite_data)
+        return DatabaseCoverage(palette=self.palette, user_config=self.user_config, data=composite_data)
 
     def _update_coverage_hash(self):
         """
@@ -506,7 +510,6 @@ class DatabaseCoverage(object):
         #
 
         block_ratio = len(basic_blocks) / float(len(instructions))
-        block_trace_confidence = 0.80
         logger.debug("Block confidence %f" % block_ratio)
 
         #
@@ -515,7 +518,7 @@ class DatabaseCoverage(object):
         # (bb_address, size) into its respective addresses
         #
 
-        treat_as_instruction_trace = block_ratio < block_trace_confidence
+        treat_as_instruction_trace = block_ratio < self.user_config.block_trace_confidence_threshold
         treat_as_block_trace = not treat_as_instruction_trace
 
         log.lmsg("is_block_trace confidence %f%%, treating as %s trace" % (block_ratio*100, "block" if treat_as_block_trace else "instruction"))

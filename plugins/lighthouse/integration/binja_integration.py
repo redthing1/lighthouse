@@ -1,10 +1,12 @@
 import ctypes
 import logging
+import json
 
 from binaryninja import PluginCommand
+from binaryninja.settings import Settings
 from binaryninjaui import UIAction, UIActionHandler, Menu
 
-from lighthouse.context import LighthouseContext
+from lighthouse.context import LighthouseContext, LighthouseUserConfig
 from lighthouse.integration.core import LighthouseCore
 from lighthouse.util.disassembler import disassembler
 
@@ -13,6 +15,21 @@ logger = logging.getLogger("Lighthouse.Binja.Integration")
 #------------------------------------------------------------------------------
 # Lighthouse Binja Integration
 #------------------------------------------------------------------------------
+
+settings = Settings()
+settings.register_group('lighthouse_binja', 'Lighthouse')
+settings.register_setting('lighthouse_binja.block_trace_confidence_threshold', json.dumps({
+    'title': 'Block Trace Confidence Threshold',
+    'description': 'The minimum ratio of block_hits / instruction_hits above which a block trace should be exploded to an instruction trace.',
+    'default': 0.80,
+    'type': 'number'
+}))
+settings.register_setting('lighthouse_binja.suspicious_nodes_confidence_threshold', json.dumps({
+    'title': 'Suspicious Nodes Confidence Threshold',
+    'description': 'The minimum ratio of "bad" coverage nodes above which a trace is considered suspicious.',
+    'default': 0.02,
+    'type': 'number'
+}))
 
 class LighthouseBinja(LighthouseCore):
     """
@@ -36,9 +53,12 @@ class LighthouseBinja(LighthouseCore):
         #
 
         if dctx_id not in self.lighthouse_contexts:
-
             # create a new 'context' representing this BNDB / bv
-            lctx = LighthouseContext(self, dctx)
+            user_config = LighthouseUserConfig(
+                block_trace_confidence_threshold=settings.get_double('lighthouse_binja.block_trace_confidence_threshold'),
+                suspicious_nodes_confidence_threshold=settings.get_double('lighthouse_binja.suspicious_nodes_confidence_threshold')
+            )
+            lctx = LighthouseContext(self, dctx, user_config=user_config)
             if startup:
                 lctx.start()
 

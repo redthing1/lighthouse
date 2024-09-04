@@ -17,6 +17,7 @@ from lighthouse.metadata import DatabaseMetadata, metadata_progress
 from lighthouse.coverage import DatabaseCoverage
 from lighthouse.exceptions import *
 from lighthouse.composer.parser import *
+from lighthouse.user_config import LighthouseUserConfig
 
 logger = logging.getLogger("Lighthouse.Director")
 
@@ -51,13 +52,16 @@ class CoverageDirector(object):
     between any number of coverage files.
     """
 
-    def __init__(self, metadata, palette):
+    def __init__(self, metadata, palette, user_config: LighthouseUserConfig):
 
         # the database metadata cache
         self.metadata = metadata
 
         # the plugin color palette
         self.palette = palette
+
+        # the user configuration
+        self.user_config = user_config
 
         #----------------------------------------------------------------------
         # Coverage
@@ -95,9 +99,9 @@ class CoverageDirector(object):
 
         self._special_coverage = collections.OrderedDict(
         [
-            (HOT_SHELL,       DatabaseCoverage(palette, HOT_SHELL)),
-            (NEW_COMPOSITION, DatabaseCoverage(palette, NEW_COMPOSITION)),
-            (AGGREGATE,       DatabaseCoverage(palette, AGGREGATE)),
+            (HOT_SHELL,       DatabaseCoverage(palette=palette, user_config=self.user_config, name=HOT_SHELL)),
+            (NEW_COMPOSITION, DatabaseCoverage(palette=palette, user_config=self.user_config, name=NEW_COMPOSITION)),
+            (AGGREGATE,       DatabaseCoverage(palette=palette, user_config=self.user_config, name=AGGREGATE)),
         ])
 
         # a flag to suspend/resume the automatic coverage aggregation
@@ -816,10 +820,11 @@ class CoverageDirector(object):
 
         # create a new database coverage mapping from the given coverage data
         new_coverage = DatabaseCoverage(
-            self.palette,
-            coverage_name,
-            coverage_filepath,
-            coverage_data
+            palette=self.palette,
+            user_config=self.user_config,
+            name=coverage_name,
+            filepath=coverage_filepath,
+            data=coverage_data
         )
         new_coverage.update_metadata(self.metadata)
         new_coverage.refresh()
@@ -931,7 +936,7 @@ class CoverageDirector(object):
         # TODO/FUTURE: check if there's any references to the coverage aggregate?
 
         # assign a new, blank aggregate set
-        self._special_coverage[AGGREGATE] = DatabaseCoverage(self.palette, AGGREGATE)
+        self._special_coverage[AGGREGATE] = DatabaseCoverage(palette=self.palette, user_config=self.user_config, name=AGGREGATE)
         self._refresh_aggregate() # probably not needed
 
     def get_coverage(self, name):
@@ -1167,7 +1172,7 @@ class CoverageDirector(object):
 
         # if the AST is effectively 'null', return a blank coverage set
         if isinstance(ast, TokenNull):
-            return DatabaseCoverage(self.palette)
+            return DatabaseCoverage(palette=self.palette, user_config=self.user_config)
 
         #
         # the director's composition evaluation code (this function) is most
@@ -1305,7 +1310,7 @@ class CoverageDirector(object):
             # we use the mask to generate a new DatabaseCoverage mapping.
             #
 
-            new_composition = DatabaseCoverage(self.palette, data=coverage_mask)
+            new_composition = DatabaseCoverage(palette=self.palette, user_config=self.user_config, data=coverage_mask)
 
             # cache & return the newly computed composition
             self._composition_cache[composition_hash] = new_composition
