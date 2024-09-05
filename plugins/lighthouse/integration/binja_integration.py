@@ -55,8 +55,8 @@ class LighthouseBinja(LighthouseCore):
         if dctx_id not in self.lighthouse_contexts:
             # create a new 'context' representing this BNDB / bv
             user_config = LighthouseUserConfig(
-                block_trace_confidence_threshold=settings.get_double('lighthouse_binja.block_trace_confidence_threshold'),
-                suspicious_nodes_confidence_threshold=settings.get_double('lighthouse_binja.suspicious_nodes_confidence_threshold')
+                block_trace_confidence_threshold=settings.get_double('lighthouse_binja.block_trace_confidence_threshold', view=dctx),
+                suspicious_nodes_confidence_threshold=settings.get_double('lighthouse_binja.suspicious_nodes_confidence_threshold', view=dctx)
             )
             lctx = LighthouseContext(self, dctx, user_config=user_config)
             if startup:
