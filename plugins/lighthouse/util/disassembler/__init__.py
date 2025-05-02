@@ -31,7 +31,8 @@ if disassembler == None:
         from .binja_api import BinjaCoreAPI, BinjaContextAPI
         disassembler = BinjaCoreAPI()
         DisassemblerContextAPI = BinjaContextAPI
-    except ImportError:
+    except ImportError as ie:
+        raise ie
         pass
 
 #--------------------------------------------------------------------------
