@@ -129,32 +129,28 @@ function drcov_bbs(bbs, fmaps, path_ids) {
 
 Stalker.trustThreshold = 0;
 
-if (Stalker.isAvailable) {
-    console.log('Stalker is available. Starting to stalk threads...');
-    Process.enumerateThreads({
-        onMatch: function (thread) {
-            if (threadlist.indexOf(thread.id) < 0 && threadlist.indexOf('all') < 0) {
-                return;
-            }
-            console.log('Stalking thread ' + thread.id + '.');
-            Stalker.follow(thread.id, {
-                events: { compile: true },
-                onReceive: function (events) {
-                    var parsed_bbs = Stalker.parse(events, {stringify: false, annotate: false});
-                    if (parsed_bbs && parsed_bbs.length > 0) {
-                        var bbs_data = drcov_bbs(parsed_bbs, filtered_maps, module_ids);
-                        if (bbs_data && bbs_data.buffer.byteLength > 0) {
-                            send({bbs: 1}, bbs_data);
-                        }
+console.log('Starting to stalk threads...');
+Process.enumerateThreads({
+    onMatch: function (thread) {
+        if (threadlist.indexOf(thread.id) < 0 && threadlist.indexOf('all') < 0) {
+            return;
+        }
+        console.log('Stalking thread ' + thread.id + '.');
+        Stalker.follow(thread.id, {
+            events: { compile: true },
+            onReceive: function (events) {
+                var parsed_bbs = Stalker.parse(events, {stringify: false, annotate: false});
+                if (parsed_bbs && parsed_bbs.length > 0) {
+                    var bbs_data = drcov_bbs(parsed_bbs, filtered_maps, module_ids);
+                    if (bbs_data && bbs_data.buffer.byteLength > 0) {
+                        send({bbs: 1}, bbs_data);
                     }
                 }
-            });
-        },
-        onComplete: function () { console.log('Done enumerating threads for stalking.'); }
-    });
-} else {
-    console.error("Stalker is not available on this platform/process.");
-}
+            }
+        });
+    },
+    onComplete: function () { console.log('Done enumerating threads for stalking.'); }
+});
 """
 
 # these are global so we can easily access them from the frida callbacks or
